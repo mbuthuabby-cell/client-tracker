@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Client Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        outfit: ['Outfit', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0b0f19;
+            background-image: radial-gradient(circle at 80% 20%, rgba(16, 185, 129, 0.05) 0%, transparent 40%),
+                              radial-gradient(circle at 10% 80%, rgba(14, 165, 233, 0.05) 0%, transparent 40%);
+        }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="text-slate-300 min-h-screen flex flex-col">
+
+    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 text-xl font-bold">
+                    <i class="fa-solid fa-chart-line"></i>
+                </div>
+                <div>
+                    <h1 class="font-outfit text-white font-bold text-lg leading-none">Client Tracker</h1>
+                    <span class="text-xs text-slate-500 font-medium tracking-wider uppercase">CRM & Directory</span>
+                </div>
+            </div>
+            <div class="flex items-center gap-4">
+                <button onclick="exportData()" class="px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 transition flex items-center gap-2">
+                    <i class="fa-solid fa-file-export"></i> Export
+                </button>
+                <button onclick="triggerImport()" class="px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 transition flex items-center gap-2">
+                    <i class="fa-solid fa-file-import"></i> Import
+                </button>
+                <input type="file" id="importFile" class="hidden" onchange="importData(event)">
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-6 py-8 w-full flex-grow flex flex-col gap-8">
+        
+        <section class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="bg-slate-900/60 border border-slate-800/80 p-5 rounded-2xl flex items-center gap-4">
+                <div class="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400 text-xl">
+                    <i class="fa-solid fa-users"></i>
+                </div>
+                <div>
+                    <span class="text-xs text-slate-500 font-bold uppercase tracking-wider">Total Logs</span>
+                    <h3 id="stat-total" class="font-outfit text-white text-2xl font-bold mt-0.5">0</h3>
+                </div>
+            </div>
+            
+            <div class="bg-slate-900/60 border border-slate-800/80 p-5 rounded-2xl flex items-center gap-4">
+                <div class="w-12 h-12 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-400 text-xl">
+                    <i class="fa-solid fa-paper-plane"></i>
+                </div>
+                <div>
+                    <span class="text-xs text-slate-500 font-bold uppercase tracking-wider">Pitched Logs</span>
+                    <h3 id="stat-pitches" class="font-outfit text-white text-2xl font-bold mt-0.5">0</h3>
+                </div>
+            </div>
+
+            <div class="bg-slate-900/60 border border-slate-800/80 p-5 rounded-2xl flex items-center gap-4">
+                <div class="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-400 text-xl">
+                    <i class="fa-solid fa-dollar-sign"></i>
+                </div>
+                <div>
+                    <span class="text-xs text-slate-500 font-bold uppercase tracking-wider">Paid Clients</span>
+                    <h3 id="stat-paid" class="font-outfit text-white text-2xl font-bold mt-0.5">0</h3>
+                </div>
+            </div>
+
+            <div class="bg-slate-900/60 border border-slate-800/80 p-5 rounded-2xl flex items-center gap-4 border-emerald-500/20 relative overflow-hidden group">
+                <div class="absolute inset-0 bg-gradient-to-r from-emerald-500/5 to-transparent pointer-events-none"></div>
+                <div class="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 text-xl relative z-10">
+                    <i class="fa-solid fa-circle-check"></i>
+                </div>
+                <div class="relative z-10">
+                    <span class="text-xs text-emerald-500/80 font-bold uppercase tracking-wider">Agreed Deals</span>
+                    <h3 id="stat-agreed" class="font-outfit text-white text-2xl font-bold mt-0.5">0 <span class="text-sm font-normal text-slate-500">/ Target: 10</span></h3>
+                </div>
+            </div>
+        </section>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            
+            <div class="lg:col-span-4 flex flex-col gap-6">
+                <div class="bg-slate-900/80 border border-slate-800/80 p-6 rounded-2xl">
+                    <h2 class="font-outfit text-white text-lg font-semibold mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-plus text-emerald-400"></i> Log a New Prospect
+                    </h2>
+                    <form id="lead-form" onsubmit="addLead(event)" class="flex flex-col gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-400 mb-1">Business Name *</label>
+                            <input type="text" id="business-name" required placeholder="e.g. Westlands Auto Garage" class="w-full bg-slate-950/80 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-emerald-500 transition">
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-400 mb-1">Contact Person</label>
+                                <input type="text" id="contact-name" placeholder="e.g. John" class="w-full bg-slate-950/80 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-emerald-500 transition">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-400 mb-1">Platform Channel</label>
+                                <select id="platform" class="w-full bg-slate-950/80 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-emerald-500 transition">
+                                    <option value="Instagram">Instagram DM</option>
+                                    <option value="Google Maps">Google Maps</option>
+                                    <option value="WhatsApp">WhatsApp</option>
+                                    <option value="Cold Email">Cold Email</option>
+                                    <option value="TikTok">TikTok</option>
+                                    <option value="Facebook">Facebook</option>
+                                    <option value="Reddit">Reddit</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-400 mb-1">Contact Handle / Phone Number</label>
+                            <input type="text" id="contact-handle" placeholder="e.g. @username or +254..." class="w-full bg-slate-950/80 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-emerald-500 transition">
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-400 mb-1">Initial Status</label>
+                                <select id="status" class="w-full bg-slate-950/80 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-emerald-500 transition">
+                                    <option value="Lead">Lead Only</option>
+                                    <option value="Pitched">Pitched</option>
+                                    <option value="Delivered">Delivered</option>
+                                    <option value="Seen">Seen</option>
+                                    <option value="Rejected">Rejected</option>
+                                    <option value="Agreed">Agreed</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-400 mb-1">Payment Status</label>
+                                <select id="payment" class="w-full bg-slate-950/80 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-emerald-500 transition">
+                                    <option value="Unpaid">❌ Unpaid</option>
+                                    <option value="Paid">✅ Paid</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-400 mb-1">Notes / Target Gap Details</label>
+                            <textarea id="notes" rows="3" placeholder="e.g. Needs Google Business profile optimisation and a landing page." class="w-full bg-slate-950/80 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-emerald-500 transition"></textarea>
+                        </div>
+                        <button type="submit" class="w-full py-2.5 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-semibold text-sm rounded-lg transition duration-200 flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-floppy-disk"></i> Save to Directory
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="lg:col-span-8 flex flex-col gap-6">
+                
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-slate-800 pb-4 gap-4">
+                    <h2 class="font-outfit text-white text-lg font-semibold">Client Directory</h2>
+                    <div class="flex items-center gap-2 w-full sm:w-auto">
+                        <span class="text-xs text-slate-500 font-semibold uppercase whitespace-nowrap">Search Logs:</span>
+                        <input type="text" id="search" oninput="render()" placeholder="Type business name or handle..." class="w-full sm:w-64 bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-emerald-500 transition">
+                    </div>
+                </div>
+
+                <div id="view-table" class="bg-slate-900/40 border border-slate-800 rounded-2xl overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-950 text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-slate-800">
+                                    <th class="p-4">Business & Contact</th>
+                                    <th class="p-4">Handle / Number</th>
+                                    <th class="p-4">Channel</th>
+                                    <th class="p-4">Status</th>
+                                    <th class="p-4">Payment</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <div id="status-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl p-6 relative">
+            <button onclick="closeModal()" class="absolute top-4 right-4 text-slate-500 hover:text-white transition">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+            <h3 class="font-outfit text-white text-lg font-semibold mb-6">View & Edit Client Details</h3>
+            
+            <div class="flex flex-col gap-4">
+                <input type="hidden" id="modal-lead-id">
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 mb-1">Business Name</label>
+                        <input type="text" id="modal-business" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-sm text-slate-200 focus:outline-none focus:border-emerald-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 mb-1">Contact Person</label>
+                        <input type="text" id="modal-contact" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-sm text-slate-200 focus:outline-none focus:border-emerald-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 mb-1">Platform Channel</label>
+                        <select id="modal-channel" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-sm text-slate-200 focus:outline-none focus:border-emerald-500">
+                            <option value="Instagram">Instagram DM</option>
+                            <option value="Google Maps">Google Maps</option>
+                            <option value="WhatsApp">WhatsApp</option>
+                            <option value="Cold Email">Cold Email</option>
+                            <option value="TikTok">TikTok</option>
+                            <option value="Facebook">Facebook</option>
+                            <option value="Reddit">Reddit</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 mb-1">Handle / Number</label>
+                        <input type="text" id="modal-handle" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-sm text-slate-200 focus:outline-none focus:border-emerald-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 mb-1">Current Status Stage</label>
+                        <select id="modal-status" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-sm text-slate-200 focus:outline-none focus:border-emerald-500">
+                            <option value="Lead">Lead Logged</option>
+                            <option value="Pitched">Pitched</option>
+                            <option value="Delivered">Delivered</option>
+                            <option value="Seen">Seen</option>
+                            <option value="Rejected">Rejected</option>
+                            <option value="Agreed">Agreed</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 mb-1">Payment Status</label>
+                        <select id="modal-payment" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-sm text-slate-200 focus:outline-none focus:border-emerald-500">
+                            <option value="Unpaid">❌ Unpaid</option>
+                            <option value="Paid">✅ Paid</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-1">Notes / Details</label>
+                    <textarea id="modal-notes" rows="4" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-emerald-500"></textarea>
+                </div>
+
+                <div class="border-t border-slate-800/80 pt-4 mt-2 flex justify-between items-center">
+                    <button onclick="deleteLead()" class="px-3 py-1.5 text-xs font-semibold text-rose-500 hover:bg-rose-500/10 rounded-lg transition">
+                        <i class="fa-solid fa-trash-can mr-1"></i> Delete Client
+                    </button>
+                    <button onclick="saveModalChanges()" class="px-5 py-2 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-semibold text-sm rounded-lg transition">
+                        Save Changes
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const defaultLeads = [];
+
+        let leads = [];
+
+        function init() {
+            const saved = localStorage.getItem('client_tracker_leads_v6');
+            if (saved) {
+                leads = JSON.parse(saved);
+            } else {
+                leads = defaultLeads;
+                localStorage.setItem('client_tracker_leads_v6', JSON.stringify(leads));
+            }
+            render();
+        }
+
+        function save() {
+            localStorage.setItem('client_tracker_leads_v6', JSON.stringify(leads));
+            render();
+        }
+
+        function addLead(e) {
+            e.preventDefault();
+            const newLead = {
+                id: Date.now(),
+                business: document.getElementById('business-name').value.trim(),
+                contact: document.getElementById('contact-name').value.trim() || "N/A",
+                handle: document.getElementById('contact-handle').value.trim() || "None listed",
+                channel: document.getElementById('platform').value,
+                notes: document.getElementById('notes').value.trim() || "No customised notes logged.",
+                status: document.getElementById('status').value,
+                payment: document.getElementById('payment').value
+            };
+            leads.push(newLead);
+            save();
+            document.getElementById('lead-form').reset();
+        }
+
+        function render() {
+            const query = document.getElementById('search').value.toLowerCase();
+            const filtered = leads.filter(l => 
+                l.business.toLowerCase().includes(query) || 
+                l.handle.toLowerCase().includes(query) || 
+                l.contact.toLowerCase().includes(query)
+            );
+
+            document.getElementById('stat-total').innerText = leads.length;
+            document.getElementById('stat-pitches').innerText = leads.filter(l => l.status !== 'Lead').length;
+            document.getElementById('stat-paid').innerText = leads.filter(l => l.payment === 'Paid').length;
+            
+            const agreedCount = leads.filter(l => l.status === 'Agreed').length;
+            document.getElementById('stat-agreed').innerHTML = `${agreedCount} <span class="text-sm font-normal text-slate-500">/ Target: 10</span>`;
+
+            const tbody = document.getElementById('table-body');
+            tbody.innerHTML = '';
+            filtered.forEach(lead => {
+                const tr = document.createElement('tr');
+                tr.className = "border-b border-slate-800 hover:bg-slate-900/40 transition text-xs sm:text-sm cursor-pointer";
+                tr.onclick = () => openModal(lead.id);
+                tr.innerHTML = `
+                    <td class="p-4">
+                        <div class="font-outfit text-white font-semibold">${lead.business}</div>
+                        <div class="text-xs text-slate-500">Contact: ${lead.contact}</div>
+                    </td>
+                    <td class="p-4 text-slate-300 font-mono text-xs">${lead.handle}</td>
+                    <td class="p-4"><span class="text-xs px-2 py-0.5 rounded font-semibold ${getChannelColor(lead.channel)}">${lead.channel}</span></td>
+                    <td class="p-4 font-semibold ${getStatusColor(lead.status)}">${lead.status}</td>
+                    <td class="p-4 font-bold text-xs ${lead.payment === 'Paid' ? 'text-emerald-400' : 'text-slate-600'}">${lead.payment === 'Paid' ? '✅ Paid' : '❌ Unpaid'}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function getChannelColor(c) {
+            if (c === 'Instagram') return 'bg-pink-500/10 text-pink-400';
+            if (c === 'Google Maps') return 'bg-blue-500/10 text-blue-400';
+            if (c === 'WhatsApp') return 'bg-emerald-500/10 text-emerald-400';
+            if (c === 'TikTok') return 'bg-slate-700/50 text-white';
+            if (c === 'Facebook') return 'bg-blue-600/20 text-blue-400';
+            if (c === 'Reddit') return 'bg-orange-500/10 text-orange-500';
+            return 'bg-purple-500/10 text-purple-400';
+        }
+
+        function getStatusColor(s) {
+            if (s === 'Lead') return 'text-blue-400';
+            if (s === 'Pitched') return 'text-cyan-400';
+            if (s === 'Delivered') return 'text-yellow-500';
+            if (s === 'Seen') return 'text-rose-400';
+            if (s === 'Rejected') return 'text-slate-500 line-through';
+            if (s === 'Agreed') return 'text-emerald-400 font-bold';
+            return 'text-slate-300';
+        }
+
+        function openModal(id) {
+            const lead = leads.find(l => l.id === id);
+            if (!lead) return;
+            document.getElementById('modal-lead-id').value = id;
+            document.getElementById('modal-business').value = lead.business;
+            document.getElementById('modal-contact').value = lead.contact;
+            document.getElementById('modal-channel').value = lead.channel;
+            document.getElementById('modal-handle').value = lead.handle;
+            document.getElementById('modal-status').value = lead.status;
+            document.getElementById('modal-payment').value = lead.payment;
+            document.getElementById('modal-notes').value = lead.notes;
+            
+            document.getElementById('status-modal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('status-modal').classList.add('hidden');
+        }
+
+        function saveModalChanges() {
+            const id = parseInt(document.getElementById('modal-lead-id').value);
+            const lead = leads.find(l => l.id === id);
+            if (lead) {
+                lead.business = document.getElementById('modal-business').value.trim();
+                lead.contact = document.getElementById('modal-contact').value.trim();
+                lead.channel = document.getElementById('modal-channel').value;
+                lead.handle = document.getElementById('modal-handle').value.trim();
+                lead.status = document.getElementById('modal-status').value;
+                lead.payment = document.getElementById('modal-payment').value;
+                lead.notes = document.getElementById('modal-notes').value.trim();
+                save();
+            }
+            closeModal();
+        }
+
+        function deleteLead() {
+            if (confirm("Permanently erase this client log?")) {
+                const id = parseInt(document.getElementById('modal-lead-id').value);
+                leads = leads.filter(l => l.id !== id);
+                save();
+                closeModal();
+            }
+        }
+
+        function exportData() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(leads, null, 2));
+            const anchor = document.createElement('a');
+            anchor.setAttribute("href", dataStr);
+            anchor.setAttribute("download", "Client_Tracker_Logs.json");
+            document.body.appendChild(anchor);
+            anchor.click();
+            anchor.remove();
+        }
+
+        function triggerImport() { document.getElementById('importFile').click(); }
+        
+        function importData(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                try {
+                    const parsed = JSON.parse(evt.target.result);
+                    if (Array.isArray(parsed)) { leads = parsed; save(); }
+                } catch(err) { alert("Error reading file template."); }
+            };
+            reader.readAsText(file);
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
